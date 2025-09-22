@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Assessment de Seguridad</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #2c3e50;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+
+        .resolved {
+            color: #27ae60;
+        }
+
+        .pending {
+            color: #e67e22;
+        }
+
+        .analysis {
+            color: #3498db;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .progress-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background-color: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+            border-radius: 15px;
+            transition: width 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            width: 0%;
+        }
+
+        .domains-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .domain-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .domain-title {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        .domain-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .domain-stat {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        /* Estilos para la sección de puntos pendientes */
+        .pending-points-section {
+            margin: 30px 0;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .pending-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .pending-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .pending-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .pending-card.technical {
+            border-left-color: #e67e22;
+        }
+
+        .pending-card.analysis {
+            border-left-color: #3498db;
+        }
+
+        .pending-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .pending-domain {
+            background: #ecf0f1;
+            color: #2c3e50;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .pending-priority {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .priority-high {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+
+        .priority-medium {
+            background: rgba(230, 126, 34, 0.2);
+            color: #e67e22;
+        }
+
+        .priority-low {
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+        }
+
+        .pending-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .pending-description {
+            color: #7f8c8d;
+            font-size: 0.95em;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+
+        .pending-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .pending-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .status-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .collapsible-section {
+            margin-top: 20px;
+        }
+
+        .collapsible-toggle {
+            background: none;
+            border: none;
+            color: #3498db;
+            cursor: pointer;
+            font-size: 0.9em;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible-content.open {
+            max-height: 200px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .domains-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .pending-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-number {
+                font-size: 2.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Assessment de Ciberseguridad</h1>
+            <p>Estado actual de implementación de controles de seguridad</p>
+        </div>
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-number resolved">22</div>
+                <div class="stat-label">Resueltos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number pending">6</div>
+                <div class="stat-label">Requieren Implementación</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number analysis">2</div>
+                <div class="stat-label">Requieren Análisis</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #2c3e50;">30</div>
+                <div class="stat-label">Total de Puntos</div>
+            </div>
+        </div>
+
+        <div class="progress-container">
+            <h2 class="chart-title">🎯 Progreso General de Implementación</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill">73% Completado</div>
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #27ae60;"></div>
+                    <span>Resuelto con documentación (22)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e67e22;"></div>
+                    <span>Requiere implementación técnica (6)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #3498db;"></div>
+                    <span>Requiere análisis (2)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-card">
+                <h3 class="chart-title">📈 Distribución por Estado</h3>
+                <canvas id="statusChart"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <h3 class="chart-title">🏷️ Clasificación por Tipo</h3>
+                <canvas id="classificationChart"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <h3 class="chart-title">🏛️ Puntos por Dominio</h3>
+                <canvas id="domainChart"></canvas>
+            </div>
+        </div>
+
+        <div class="domains-grid" id="domains-grid">
+        </div>
+
+        <!-- Sección de puntos pendientes -->
+        <div class="pending-points-section">
+            <h2 class="section-title">⚠️ Puntos Pendientes de Implementación</h2>
+            <div class="pending-grid" id="pending-grid">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Todos los datos globales
+        const assessmentData = {
+            total: 30,
+            resolved: 22,
+            requiresImplementation: 6,
+            requiresAnalysis: 2,
+            domains: {
+                'Riesgos': { total: 9, resolved: 5, pending: 4 },
+                'Accesos': { total: 4, resolved: 4, pending: 0 },
+                'Gobierno': { total: 4, resolved: 4, pending: 0 },
+                'Incidentes': { total: 3, resolved: 3, pending: 0 },
+                'Compliance': { total: 3, resolved: 3, pending: 0 },
+                'Comunicaciones': { total: 3, resolved: 1, pending: 2 },
+                'Activos': { total: 2, resolved: 2, pending: 0 },
+                'Operaciones': { total: 1, resolved: 0, pending: 1 },
+                'SSC - DNS': { total: 1, resolved: 0, pending: 1 }
+            }
+        };
+
+        const colors = {
+            resolved: '#27ae60',
+            requiresImplementation: '#e67e22', 
+            requiresAnalysis: '#3498db',
+            documentation: '#2ecc71',
+            mixed: '#f39c12',
+            technical: '#e74c3c'
+        };
+
+        // Puntos pendientes reales del assessment
+        const puntosPendientes = [
+            {
+                id: 6,
+                dominio: 'Operaciones',
+                titulo: 'No se realizan backups',
+                descripcion: 'No reportan backups locales; si toda la operación está en Drive/Cloud, se puede justificar que no aplica.',
+                estado: 'Requiere implementación técnica',
+                prioridad: 'high',
+                tipo: 'technical',
+                clasificacion: '🟡 Mixto',
+                detalles: 'Política y procedimiento de respaldo – Sección 8: Operaciones y Continuidad'
+            },
+            {
+                id: 21,
+                dominio: 'Accesos',
+                titulo: 'Sin doble factor de autenticación',
+                descripcion: 'No usan MFA en todos los accesos. Validar activación en Google Workspace y documentar como acción realizada.',
+                estado: 'Requiere implementación técnica',
+                prioridad: 'high',
+                tipo: 'technical',
+                clasificacion: '🟡 Mixto',
+                detalles: 'Política de MFA + validación técnica – Sección 4: Control de Accesos'
+            },
+            {
+                id: 25,
+                dominio: 'Comunicaciones',
+                titulo: 'Sin HA/redundancia',
+                descripcion: 'No tienen sistemas propios críticos. Justificar como "no aplica" por infraestructura 100% SaaS.',
+                estado: 'Requiere implementación técnica',
+                prioridad: 'medium',
+                tipo: 'technical',
+                clasificacion: '🟡 Mixto',
+                detalles: 'Documento de diseño + revisión técnica si aplica – Sección 11: Plan de Mejora Continua'
+            },
+            {
+                id: 26,
+                dominio: 'SSC - DNS',
+                titulo: 'SPF softfail sin DMARC / No hay policy activa',
+                descripcion: 'Detectado por análisis técnico: el SPF está en softfail y no hay DMARC. El cliente delega este control a Hostinger.',
+                estado: 'Requiere implementación técnica',
+                prioridad: 'high',
+                tipo: 'technical',
+                clasificacion: '🔴 Técnico',
+                detalles: 'Validación DNS + implementación de DMARC – Sección 9: Comunicaciones y Tecnología'
+            },
+            {
+                id: 27,
+                dominio: 'Comunicaciones',
+                titulo: 'No hay firewall externo',
+                descripcion: 'No tienen infraestructura expuesta, por lo que firewall no aplica. Justificar como "no relevante en el contexto actual".',
+                estado: 'Requiere análisis si aplica implementación',
+                prioridad: 'low',
+                tipo: 'analysis',
+                clasificacion: '🔴 Técnico',
+                detalles: 'Validar si realmente es necesario un WAF – Sección 11: Plan de Mejora Continua'
+            },
+            {
+                id: 28,
+                dominio: 'Comunicaciones',
+                titulo: 'No hay VPN implementada',
+                descripcion: 'El cliente mencionó que usan una VPN para ciertos usuarios para conectarse a sistemas de Mercado Libre, de resto operan 100% en Google Workspace sin infraestructura propia.',
+                estado: 'Requiere análisis si aplica implementación',
+                prioridad: 'low',
+                tipo: 'analysis',
+                clasificacion: '🔴 Técnico',
+                detalles: 'Revisión y propuesta de solución VPN – Sección 9: Comunicaciones y Tecnología'
+            },
+            {
+                id: 29,
+                dominio: 'Incidentes',
+                titulo: 'No se realizan escaneos de vulnerabilidades',
+                descripcion: 'No realizan escaneos de vulnerabilidades. Puede ofrecerse PoC Harmony/Vicarius.',
+                estado: 'Requiere implementación técnica',
+                prioridad: 'high',
+                tipo: 'technical',
+                clasificacion: '🔴 Técnico',
+                detalles: 'Implementar escaneo con herramientas – PoC Harmony/Vicarius disponible'
+            },
+            {
+                id: 30,
+                dominio: 'Compliance',
+                titulo: 'No cuenta con póliza de seguro cibernético',
+                descripcion: 'Requiere evaluación comercial y contratación real de póliza.',
+                estado: 'Requiere implementación técnica',
+                prioridad: 'medium',
+                tipo: 'technical',
+                clasificacion: '🔴 Técnico',
+                detalles: 'Evaluación y contratación de seguro cibernético – Sección 10: Cumplimiento y Auditoría'
+            }
+        ];
+
+        // Función para alternar detalles
+        function toggleDetails(pointId) {
+            const content = document.getElementById('details-' + pointId);
+            const button = content.parentElement.querySelector('.collapsible-toggle');
+            const isOpen = content.classList.contains('open');
+            
+            // Cerrar todos los otros detalles
+            document.querySelectorAll('.collapsible-content').forEach(element => {
+                element.classList.remove('open');
+            });
+            
+            // Resetear todos los botones
+            document.querySelectorAll('.collapsible-toggle').forEach(btn => {
+                btn.textContent = 'Ver detalles';
+            });
+            
+            // Abrir/cerrar el seleccionado
+            if (!isOpen) {
+                content.classList.add('open');
+                button.textContent = 'Ocultar detalles';
+            }
+        }
+
+        // Inicialización cuando el DOM está listo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar progreso
+            const progressFill = document.getElementById('progress-fill');
+            const percentage = Math.round((assessmentData.resolved / assessmentData.total) * 100);
+            
+            setTimeout(function() {
+                progressFill.style.width = percentage + '%';
+            }, 500);
+
+            // Crear gráficos
+            createCharts();
+            
+            // Crear cards de dominios
+            createDomainCards();
+            
+            // Crear sección de puntos pendientes
+            createPendingPointsSection();
+        });
+
+        function createCharts() {
+            // Gráfico de estados
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Resuelto con documentación', 'Requiere implementación técnica', 'Requiere análisis'],
+                    datasets: [{
+                        data: [22, 6, 2],
+                        backgroundColor: [colors.resolved, colors.requiresImplementation, colors.requiresAnalysis],
+                        borderWidth: 0,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de clasificaciones
+            const classificationCtx = document.getElementById('classificationChart').getContext('2d');
+            new Chart(classificationCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Solo documentación', 'Mixto', 'Técnico'],
+                    datasets: [{
+                        data: [19, 6, 5],
+                        backgroundColor: [colors.documentation, colors.mixed, colors.technical],
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 2 }
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de dominios
+            const domainCtx = document.getElementById('domainChart').getContext('2d');
+            const domainLabels = Object.keys(assessmentData.domains);
+            const domainData = domainLabels.map(function(domain) {
+                return assessmentData.domains[domain].total;
+            });
+            
+            new Chart(domainCtx, {
+                type: 'bar',
+                data: {
+                    labels: domainLabels,
+                    datasets: [{
+                        label: 'Total de puntos',
+                        data: domainData,
+                        backgroundColor: '#3498db',
+                        borderRadius: 4,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        },
+                        y: {
+                            ticks: {
+                                maxRotation: 0,
+                                font: { size: 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createDomainCards() {
+            const container = document.getElementById('domains-grid');
+            
+            Object.entries(assessmentData.domains).forEach(function([domain, data]) {
+                const resolvedPercentage = Math.round((data.resolved / data.total) * 100);
+                
+                const card = document.createElement('div');
+                card.className = 'domain-card';
+                card.innerHTML = 
+                    '<div class="domain-title">' + domain + '</div>' +
+                    '<div style="display: flex; align-items: center; gap: 15px;">' +
+                        '<div style="flex: 1;">' +
+                            '<div style="background-color: #ecf0f1; height: 8px; border-radius: 4px; overflow: hidden;">' +
+                                '<div style="background-color: ' + colors.resolved + '; height: 100%; width: ' + resolvedPercentage + '%; transition: width 1s ease-in-out;"></div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div style="font-weight: bold; color: ' + colors.resolved + ';">' + resolvedPercentage + '%</div>' +
+                    '</div>' +
+                    '<div class="domain-stats">' +
+                        '<div class="domain-stat" style="background-color: rgba(39, 174, 96, 0.1);">' +
+                            '<div style="color: ' + colors.resolved + '; font-weight: bold;">' + data.resolved + '</div>' +
+                            '<div style="font-size: 0.9em;">Resueltos</div>' +
+                        '</div>' +
+                        '<div class="domain-stat" style="background-color: rgba(230, 126, 34, 0.1);">' +
+                            '<div style="color: ' + colors.requiresImplementation + '; font-weight: bold;">' + data.pending + '</div>' +
+                            '<div style="font-size: 0.9em;">Pendientes</div>' +
+                        '</div>' +
+                        '<div class="domain-stat" style="background-color: rgba(52, 152, 219, 0.1);">' +
+                            '<div style="color: ' + colors.requiresAnalysis + '; font-weight: bold;">' + data.total + '</div>' +
+                            '<div style="font-size: 0.9em;">Total</div>' +
+                        '</div>' +
+                    '</div>';
+                
+                container.appendChild(card);
+            });
+        }
+
+        function createPendingPointsSection() {
+            const container = document.getElementById('pending-grid');
+            
+            puntosPendientes.forEach(function(punto) {
+                const card = document.createElement('div');
+                card.className = 'pending-card ' + punto.tipo;
+                
+                const priorityClass = 'priority-' + punto.prioridad;
+                const priorityText = punto.prioridad === 'high' ? 'Alta' : 
+                                   punto.prioridad === 'medium' ? 'Media' : 'Baja';
+                
+                const statusColor = punto.tipo === 'technical' ? '#e67e22' : '#3498db';
+                const statusText = punto.tipo === 'technical' ? 'Implementación Técnica' : 'Requiere Análisis';
+                
+                card.innerHTML = 
+                    '<div class="pending-header">' +
+                        '<span class="pending-domain">' + punto.dominio + '</span>' +
+                        '<span class="pending-priority ' + priorityClass + '">' + priorityText + '</span>' +
+                    '</div>' +
+                    '<div class="pending-title">' + punto.titulo + '</div>' +
+                    '<div class="pending-description">' + punto.descripcion + '</div>' +
+                    '<div class="pending-footer">' +
+                        '<div class="pending-status">' +
+                            '<div class="status-icon" style="background-color: ' + statusColor + ';"></div>' +
+                            '<span>' + statusText + '</span>' +
+                        '</div>' +
+                        '<button class="collapsible-toggle" onclick="toggleDetails(' + punto.id + ')">' +
+                            'Ver detalles' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="collapsible-section">' +
+                        '<div class="collapsible-content" id="details-' + punto.id + '">' +
+                            '<div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">' +
+                                '<strong>Clasificación:</strong> ' + punto.clasificacion + '<br>' +
+                                '<strong>Acción requerida:</strong> ' + punto.detalles +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
